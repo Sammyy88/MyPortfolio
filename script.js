@@ -1,40 +1,52 @@
-// Initialize Locomotive Scroll
-const scroll = new LocomotiveScroll({
-    el: document.querySelector('[data-scroll-container]'),
-    smooth: true
-    
-});
+(() => {
+    document.addEventListener("DOMContentLoaded", () => {
+        // DOM Elements
+        const scrollContainer = document.querySelector('[data-scroll-container]');
+        const burger = document.getElementById('burger');
+        const navLinks = document.querySelector('.nav-links');
+        const images = document.querySelectorAll('.grid-item img');
 
-// Mobile Burger Menu
-const burger = document.getElementById('burger');
-const navLinks = document.querySelector('.nav-links');
+        // Initialize Locomotive Scroll with Error Handling
+        if (scrollContainer) {
+            try {
+                const scroll = new LocomotiveScroll({
+                    el: scrollContainer,
+                    smooth: true,
+                });
+            } catch (error) {
+                console.error("LocomotiveScroll initialization failed:", error);
+            }
+        }
 
-burger.addEventListener('click', () => {
-    navLinks.classList.toggle('active');
-});
+        // Mobile Burger Menu Logic with Accessibility
+        if (burger && navLinks) {
+            burger.addEventListener('click', () => {
+                const isActive = navLinks.classList.toggle('active');
+                burger.setAttribute('aria-expanded', isActive);
+            });
+        }
 
+        // Lazy Loading Images with IntersectionObserver & requestIdleCallback Fallback
+        const lazyLoad = (entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    if (img.dataset.src && !img.src) {
+                        img.src = img.dataset.src;
+                        observer.unobserve(img);
+                    }
+                }
+            });
+        };
 
-document.addEventListener("DOMContentLoaded", function () {
-    const images = document.querySelectorAll(".grid-item img");
+        const observer = new IntersectionObserver(lazyLoad, { threshold: 0.1 });
 
-    const lazyLoad = (entries, observer) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const img = entry.target;
-                img.src = img.dataset.src; // Load the image
-                observer.unobserve(img);
-                
+        images.forEach(img => {
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(() => observer.observe(img));
+            } else {
+                observer.observe(img);
             }
         });
-    };
-
-    const observer = new IntersectionObserver(lazyLoad, {
-        threshold: 0.1
     });
-
-    images.forEach(img => {
-        observer.observe(img);
-    });
-});
-
-
+})();
